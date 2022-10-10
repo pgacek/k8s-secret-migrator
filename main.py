@@ -1,12 +1,17 @@
 import os
 import json
 import base64
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 env = "dev"
 secrets_dir = "SECRETS_ALL"
 full_path = f'{env}/{secrets_dir}'
 decoded_path = f'{env}/decoded'
 
+################################################
 
 class Secret:
     def __init__(self, name, content):
@@ -26,7 +31,7 @@ class Secret:
         return decoded_secret
 
 
-def get_secret_file(path: str) -> list:
+def get_secret_files_list(path: str) -> list:
     try:
         os.listdir(os.path.abspath(path))  # todo it's wrong - should check if dir exsits and use only files
     except FileNotFoundError:
@@ -58,7 +63,9 @@ def save_decoded_secret_to_file(secrets_object_list: list):
             json.dump(secrets_object_list[secret].get_decoded_content(), f)
             f.close()
 
+################################################
+
 
 if __name__ == '__main__':
-    get_secret_file(full_path)
-    save_decoded_secret_to_file(read_secrets_content_from_file(get_secret_file(full_path)))
+    get_secret_files_list(full_path)
+    save_decoded_secret_to_file(read_secrets_content_from_file(get_secret_files_list(full_path)))
