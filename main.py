@@ -140,6 +140,9 @@ def add_secrets_values_into_deployments_dictionary(all_deployments, secrets):
 
 
     temp_dict = {}
+    # also tried with
+    # out_dict = all_deployments.copy()
+
     out_dict = all_deployments
     for deployment_name in all_deployments:
         for i in range(len(all_deployments[deployment_name])):
