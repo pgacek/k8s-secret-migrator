@@ -124,25 +124,36 @@ def add_secrets_values_into_deployments_dictionary(all_deployments, secrets):
     :return:
     """
 
+
+    print("")
+    print("")
+    print("")
+    print("THIS IS WHATS COMMING IN:")
+    print("")
+    print("")
+    print("")
+    pprint(all_deployments)
+    print("")
+    print("")
+    print("")
+    print("")
+
+
     temp_dict = {}
+    out_dict = all_deployments
     for deployment_name in all_deployments:
-        for secret_name in range(len(all_deployments[deployment_name])):
-
-            temp_secret_name = all_deployments[deployment_name][secret_name]
-            temp_key_name = all_deployments[deployment_name][secret_name]
-
-            temp_dict[temp_key_name] = secrets[temp_secret_name]
+        for i in range(len(all_deployments[deployment_name])):
+            temp_key_name = all_deployments[deployment_name][i]
+            temp_dict[temp_key_name] = secrets[temp_key_name]
 
             for item in temp_dict:
-                if all_deployments[deployment_name][secret_name] == item:
-                    all_deployments[deployment_name][secret_name] = {item: temp_dict[item]}
+                if out_dict[deployment_name][i] == item:
+                    out_dict[deployment_name][i] = {item: temp_dict[item]}
 
-    dict_to_return = all_deployments.copy()
-
-    return dict_to_return
+    return out_dict
 
 
-def return_k8s_decoded_secrets_values_as_dict(all_secrets):
+def decode_secrets(all_secrets):
     for key, value in all_secrets.items():
         for secret_key in all_secrets[key]:
             value_to_decode = all_secrets[key][secret_key]
@@ -193,33 +204,22 @@ if __name__ == '__main__':
 
     # get all deployments from k8s namespace and save in list
     k8s_deployments_list = AppsV1.list_namespaced_deployment(namespace)
-    k8s_deployments_list_encrypted = AppsV1.list_namespaced_deployment(namespace)
 
     # create dictionary with deployment name as a key and all envs as a value
     k8s_deployments_with_envs = return_deployments_with_all_envs(k8s_deployments_list)
-    k8s_deployments_with_envs_encrypted = return_deployments_with_all_envs(k8s_deployments_list_encrypted)
 
     # keep envs which are mounted from secrets
     k8s_deployments_with_mounted_envs_from_secrets = return_deployment_with_unique_secrets(k8s_deployments_with_envs)
-    k8s_deployments_with_mounted_envs_from_secrets_encrypted = return_deployment_with_unique_secrets(k8s_deployments_with_envs_encrypted)
 
     # remove selected secrets from deployment(duplicates) and put them into a "common" key
     k8s_deployments_with_secrets_no_values = remove_selected_duplicates_from_list(k8s_deployments_with_mounted_envs_from_secrets, duplicated_secrets)
-    k8s_deployments_with_secrets_no_values_encrypted = remove_selected_duplicates_from_list(k8s_deployments_with_mounted_envs_from_secrets_encrypted, duplicated_secrets)
-
-    # # read secrets from k8s and save them in dictionary
 
 
-    k8s_secrets_with_values = return_k8s_secrets_with_values_as_dict(k8s_deployments_with_secrets_no_values)
-    k8s_secrets_with_values_encrypted = return_k8s_decoded_secrets_values_as_dict(k8s_deployments_with_secrets_no_values_encrypted)
+    k8s_secrets_with_values = decode_secrets(return_k8s_secrets_with_values_as_dict(k8s_deployments_with_secrets_no_values))
+    k8s_secrets_with_values_encrypted = return_k8s_secrets_with_values_as_dict(k8s_deployments_with_secrets_no_values)
 
-    pprint(k8s_secrets_with_values)
-    print("###########################")
-    pprint(k8s_secrets_with_values_encrypted)
-
-    # full = add_secrets_values_into_deployments_dictionary(k8s_deployments_with_secrets_no_values, k8s_secrets_with_values)
-    # full_encrypted = add_secrets_values_into_deployments_dictionary(k8s_deployments_with_secrets_no_values_encrypted, k8s_secrets_with_values_encrypted)
-
+    add_secrets_values_into_deployments_dictionary(k8s_deployments_with_secrets_no_values, k8s_secrets_with_values)
+    add_secrets_values_into_deployments_dictionary(k8s_deployments_with_secrets_no_values, k8s_secrets_with_values)
 
 
 
