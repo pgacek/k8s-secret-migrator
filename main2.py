@@ -138,20 +138,39 @@ def add_secrets_values_into_deployments_dictionary(all_deployments, secrets):
     print("")
 
     temp_dict = {}
-    # also tried with
-    # out_dict = all_deployments.copy()
 
-    out_dict = all_deployments
+    dict_to_return = dict(all_deployments)
     for deployment_name in all_deployments:
-        for i in range(len(all_deployments[deployment_name])):
-            temp_key_name = all_deployments[deployment_name][i]
+        for secret_name in range(len(all_deployments[deployment_name])):
+
+            temp_key_name = all_deployments[deployment_name][secret_name]
             temp_dict[temp_key_name] = secrets[temp_key_name]
 
             for item in temp_dict:
-                if out_dict[deployment_name][i] == item:
-                    out_dict[deployment_name][i] = {item: temp_dict[item]}
+                if dict_to_return[deployment_name][secret_name] == item:
+                    dict_to_return[deployment_name][secret_name] = {item: temp_dict[item]}
 
-    return out_dict
+    print("")
+    print("")
+    print("")
+    print("ALL_DEPLOYMENTS:")
+    print("")
+    print("")
+    print("")
+    pprint(all_deployments)
+    print("")
+    print("")
+    print("")
+    print("DICT_TO_RETURN:")
+    print("")
+    print("")
+    print("")
+    pprint(dict_to_return)
+    print("")
+    print("")
+    print("")
+
+    return dict_to_return
 
 
 def decode_secrets(all_secrets):
@@ -163,7 +182,7 @@ def decode_secrets(all_secrets):
     return all_secrets
 
 
-def return_k8s_secrets_with_values_as_dict(all_deployments):
+def get_secrets_from_k8s(all_deployments):
     """
     This function reads secrets values from kubernetes namespace.
     Secrets are encoded in base64.
@@ -197,6 +216,7 @@ def return_k8s_secrets_with_values_as_dict(all_deployments):
 
 
 if __name__ == '__main__':
+
     c = boto3.client('secretsmanager')
     config.load_kube_config()
     AppsV1 = client.AppsV1Api()
@@ -212,20 +232,67 @@ if __name__ == '__main__':
     k8s_deployments_with_mounted_envs_from_secrets = return_deployment_with_unique_secrets(k8s_deployments_with_envs)
 
     # remove selected secrets from deployment(duplicates) and put them into a "common" key
-    k8s_deployments_with_secrets_no_values = remove_selected_duplicates_from_list(
-        k8s_deployments_with_mounted_envs_from_secrets, duplicated_secrets)
+    k8s_deployments_with_secrets_no_values = remove_selected_duplicates_from_list(k8s_deployments_with_mounted_envs_from_secrets, duplicated_secrets)
 
-    k8s_secrets_with_values = decode_secrets(
-        return_k8s_secrets_with_values_as_dict(k8s_deployments_with_secrets_no_values))
-    k8s_secrets_with_values_encrypted = return_k8s_secrets_with_values_as_dict(k8s_deployments_with_secrets_no_values)
+    # # read secrets from k8s and save them in dictionary
+
+    secrets_decoded = decode_secrets(get_secrets_from_k8s(k8s_deployments_with_secrets_no_values))
+    secrets = get_secrets_from_k8s(k8s_deployments_with_secrets_no_values)
+    #pprint(secrets_decoded)
+    print("###########################")
+    print("###########################")
+    print("###########################")
+    print("###########################")
+    print("###########################")
+    #pprint(secrets)
+
+
+    add_secrets_values_into_deployments_dictionary(k8s_deployments_with_secrets_no_values, secrets)
+    add_secrets_values_into_deployments_dictionary(k8s_deployments_with_secrets_no_values, secrets)
 
 
 
 
 
-    pprint(k8s_deployments_with_secrets_no_values)
-    add_secrets_values_into_deployments_dictionary(k8s_deployments_with_secrets_no_values, k8s_secrets_with_values)
 
-    pprint(k8s_deployments_with_secrets_no_values)
-    add_secrets_values_into_deployments_dictionary(k8s_deployments_with_secrets_no_values, k8s_secrets_with_values)
 
+
+
+
+
+
+
+
+
+
+                # r = c.create_secret(
+                #     Name=aws_secret_name,
+                #     SecretString="d"
+                # )
+                # pprint(r)
+                #
+                # response = c.update_secret(
+                #     SecretId=aws_secret_name,
+                #     SecretString=json.dumps(secret_name[secret])
+                # )
+                #
+                # print(response)
+
+
+            #print(secret_value)
+
+
+
+
+        # for secret_name in range(len(k8s_deployments_with_secrets_and_values[deployment_name])):
+        #     print(k8s_deployments_with_secrets_and_values[deployment_name][secret_name])
+
+
+
+        # #print(secret.get_name())
+        #
+        # response = c.create_secret(
+        #     Name=secret.get_name(),
+        #     SecretString=json.dumps(secret.get_decoded_content())
+        # )
+        # print(response)
