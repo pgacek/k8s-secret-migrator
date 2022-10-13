@@ -1,4 +1,5 @@
 import base64
+import copy
 from pprint import pprint
 from kubernetes import client, config
 import boto3
@@ -124,34 +125,19 @@ def add_secrets_values_into_deployments_dictionary(all_deployments, secrets):
     :return:
     """
 
-    print("")
-    print("")
-    print("")
-    print("THIS IS WHATS COMMING IN:")
-    print("")
-    print("")
-    print("")
-    pprint(all_deployments)
-    print("")
-    print("")
-    print("")
-    print("")
-
     temp_dict = {}
-    # also tried with
-    # out_dict = all_deployments.copy()
+    deployment_with_secrets = copy.deepcopy(all_deployments)
 
-    out_dict = all_deployments
     for deployment_name in all_deployments:
         for i in range(len(all_deployments[deployment_name])):
             temp_key_name = all_deployments[deployment_name][i]
             temp_dict[temp_key_name] = secrets[temp_key_name]
 
             for item in temp_dict:
-                if out_dict[deployment_name][i] == item:
-                    out_dict[deployment_name][i] = {item: temp_dict[item]}
+                if deployment_with_secrets[deployment_name][i] == item:
+                    deployment_with_secrets[deployment_name][i] = {item: temp_dict[item]}
 
-    return out_dict
+    return deployment_with_secrets
 
 
 def decode_secrets(all_secrets):
@@ -220,12 +206,7 @@ if __name__ == '__main__':
     k8s_secrets_with_values_encrypted = return_k8s_secrets_with_values_as_dict(k8s_deployments_with_secrets_no_values)
 
 
-
-
-
-    pprint(k8s_deployments_with_secrets_no_values)
-    add_secrets_values_into_deployments_dictionary(k8s_deployments_with_secrets_no_values, k8s_secrets_with_values)
-
-    pprint(k8s_deployments_with_secrets_no_values)
-    add_secrets_values_into_deployments_dictionary(k8s_deployments_with_secrets_no_values, k8s_secrets_with_values)
+    pprint(add_secrets_values_into_deployments_dictionary(k8s_deployments_with_secrets_no_values, k8s_secrets_with_values))
+    print("ENCRYPTED VALUES:")
+    pprint(add_secrets_values_into_deployments_dictionary(k8s_deployments_with_secrets_no_values, k8s_secrets_with_values_encrypted))
 

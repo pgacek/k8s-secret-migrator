@@ -2,6 +2,7 @@ import base64
 from pprint import pprint
 from kubernetes import client, config
 import boto3
+import copy
 import json
 from botocore.exceptions import ClientError
 
@@ -115,6 +116,26 @@ def remove_selected_duplicates_from_list(deployment_with_all_secrets, list_of_du
     return deployment_with_all_secrets
 
 
+# def add_secrets_values_into_deployments_dictionary(all_deployments, secrets):
+#     """
+#     Put secrets values into a deployment dictionary
+#
+#     :param all_deployments:
+#     :param secrets:
+#     :return:
+#     """
+#
+    # dict_to_return = {}
+    # for deployment_name in all_deployments:
+    #     secrets_value_dict = {}
+    #     for secret_name in all_deployments[deployment_name]:
+    #         secrets_value_dict[secret_name] = secrets[secret_name]
+    #     dict_to_return[deployment_name] = [secrets_value_dict]
+    #
+    # return dict_to_return
+
+
+
 def add_secrets_values_into_deployments_dictionary(all_deployments, secrets):
     """
     Put secrets values into a deployment dictionary
@@ -124,51 +145,17 @@ def add_secrets_values_into_deployments_dictionary(all_deployments, secrets):
     :return:
     """
 
-    print("")
-    print("")
-    print("")
-    print("THIS IS WHATS COMMING IN:")
-    print("")
-    print("")
-    print("")
-    pprint(all_deployments)
-    print("")
-    print("")
-    print("")
-    print("")
 
     temp_dict = {}
+    dict_to_return = copy.deepcopy(all_deployments)
 
-    dict_to_return = dict(all_deployments)
     for deployment_name in all_deployments:
         for secret_name in range(len(all_deployments[deployment_name])):
-
             temp_key_name = all_deployments[deployment_name][secret_name]
             temp_dict[temp_key_name] = secrets[temp_key_name]
-
             for item in temp_dict:
                 if dict_to_return[deployment_name][secret_name] == item:
                     dict_to_return[deployment_name][secret_name] = {item: temp_dict[item]}
-
-    print("")
-    print("")
-    print("")
-    print("ALL_DEPLOYMENTS:")
-    print("")
-    print("")
-    print("")
-    pprint(all_deployments)
-    print("")
-    print("")
-    print("")
-    print("DICT_TO_RETURN:")
-    print("")
-    print("")
-    print("")
-    pprint(dict_to_return)
-    print("")
-    print("")
-    print("")
 
     return dict_to_return
 
