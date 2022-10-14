@@ -1,3 +1,4 @@
+import argparse
 import base64
 import collections
 import copy
@@ -10,13 +11,59 @@ import json
 import botocore
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s::%(levelname)s::%(message)s', datefmt='%m-%d-%Y %H:%M:%S')
+logging.getLogger(__name__)
 
-cluster_name = "k8s"
-env = "dev"
-namespace = "kitopi"
 duplicated_secrets = ["kafka-bootstrap-servers", "dynatrace"]
-create_secret = True
+
+
+def get_args() -> argparse.Namespace:
+    """
+    Get command line arguments - k8s cluster name, namespace and environment name
+
+    :return:
+    """
+    parser = argparse.ArgumentParser(
+        'secret_synchronizer',
+        description='Connect into k8s cluster, get deployments and secrets from selected namespace and put them into'
+                    'the AWS Secrets Manager.')
+
+    parser.add_argument(
+        '-c',
+        '--cluster-name',
+        action='store',
+        dest='cluster_name',
+        required=False,
+        default='k8s',
+        help='k8s cluster name | default -> "k8s"'
+    )
+    parser.add_argument(
+        '-e',
+        '--environment',
+        action='store',
+        dest='env',
+        required=False,
+        default='dev',
+        help='environment name | default -> "dev"'
+    )
+    parser.add_argument(
+        '-n',
+        '--namespace',
+        action='store',
+        dest='namespace',
+        required=True,
+        help='k8s namespace name'
+    )
+    parser.add_argument(
+        '--create-aws-secrets',
+        action='store',
+        dest='create_secret',
+        required=False,
+        default=False,
+        help='create new secrets in AWS Secrets Manager | default -> False'
+    )
+
+    return parser.parse_args()
 
 
 def return_deployments_with_all_envs(all_deployments) -> dict:
@@ -182,10 +229,11 @@ def replace_multiline_secret_value_with_base64(k8s_secrets_encoded: dict) -> dic
     return k8s_secrets
 
 
-def create_or_update_secret_in_secret_manager(deployments_dict: dict, create_secret: bool) -> None:
+def create_or_update_secret_in_secret_manager(deployments_dict: dict, args: argparse.Namespace) -> None:
     """
     Create or update existing secret object in AWS Secrets Manager
 
+    :param args:
     :param deployments_dict:
     :param create_secret:
     :return:
@@ -196,9 +244,9 @@ def create_or_update_secret_in_secret_manager(deployments_dict: dict, create_sec
         for secret in range(len(secrets_dict)):
 
             for secret_name, secret_value in secrets_dict[secret].items():
-                aws_secret_name = f"/{cluster_name}-{env}/{namespace}/{deployment_name}/{secret_name}"
+                aws_secret_name = f"/{args.cluster_name}-{args.env}/{args.namespace}/{deployment_name}/{secret_name}"
 
-                if create_secret:
+                if args.create_secret:
                     try:
                         r = c.create_secret(
                             Name=aws_secret_name,
@@ -228,6 +276,8 @@ def create_or_update_secret_in_secret_manager(deployments_dict: dict, create_sec
 
 
 if __name__ == '__main__':
+    args = get_args()
+
     c = boto3.client('secretsmanager')
     config.load_kube_config()
     AppsV1 = client.AppsV1Api()
@@ -258,4 +308,4 @@ if __name__ == '__main__':
                                                                                secrets)
 
     # create / update objects in AWS Secrets Manager
-    create_or_update_secret_in_secret_manager(complete_deployment_struc, False)
+    create_or_update_secret_in_secret_manager(complete_deployment_struc, args.create_secret)
