@@ -1,15 +1,13 @@
 import argparse
 import base64
-import collections
 import copy
-from pprint import pprint
-
-from botocore.client import logger
-from kubernetes import client, config
 import boto3
 import json
 import botocore
 import logging
+from pprint import pprint
+from botocore.client import logger
+from kubernetes import client, config
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s::%(levelname)s::%(message)s', datefmt='%m-%d-%Y %H:%M:%S')
 logging.getLogger(__name__)
