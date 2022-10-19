@@ -49,7 +49,8 @@ def get_args() -> argparse.Namespace:
         '--namespace',
         action='store',
         dest='namespace',
-        required=True,
+        required=False,
+        default="default",
         help='k8s namespace name'
     )
     parser.add_argument(
@@ -177,7 +178,7 @@ def decode_secrets(all_secrets: dict) -> dict:
     return decoded_secrets
 
 
-def return_k8s_secrets_with_values_as_dict(all_deployments: dict) -> dict:
+def return_k8s_secrets_with_values_as_dict(all_deployments: dict, args: argparse.Namespace) -> dict:
     """
     This function reads secrets values from kubernetes namespace.
     Secrets are encoded in base64.
@@ -195,6 +196,7 @@ def return_k8s_secrets_with_values_as_dict(all_deployments: dict) -> dict:
       }
     }
 
+    :param args:
     :param all_deployments:
     :return:
     """
@@ -202,7 +204,7 @@ def return_k8s_secrets_with_values_as_dict(all_deployments: dict) -> dict:
     secrets_values = {}
     for deployment_name in all_deployments:
         for secret_name in range(len(all_deployments[deployment_name])):
-            k8s_secret_object = CoreV1.read_namespaced_secret(all_deployments[deployment_name][secret_name], namespace)
+            k8s_secret_object = CoreV1.read_namespaced_secret(all_deployments[deployment_name][secret_name], args.namespace)
             secrets_values[k8s_secret_object.metadata.name] = k8s_secret_object.data
 
     return secrets_values
@@ -222,7 +224,6 @@ def replace_multiline_secret_value_with_base64(k8s_secrets_encoded: dict) -> dic
         for key, value in k8s_secrets[secret_name].items():
             if "\n" in value:
                 k8s_secrets[secret_name][key] = k8s_secrets_encoded[secret_name][key]
-                print(secret_name)
 
     return k8s_secrets
 
@@ -271,6 +272,9 @@ def create_or_update_secret_in_secret_manager(deployments_dict: dict, args: argp
                         secrets_failed_list.append(aws_secret_name)
                         logger.error(err.response["Error"]["Message"])
                         continue
+                    else:
+                        if len(secrets_failed_list):
+                            logger.warn(f"The secrets failed to created: {secrets_failed_list}")
 
 
 if __name__ == '__main__':
@@ -282,7 +286,7 @@ if __name__ == '__main__':
     CoreV1 = client.CoreV1Api()
 
     # get all deployments from k8s namespace and save in list
-    k8s_deployments_list = AppsV1.list_namespaced_deployment(namespace)
+    k8s_deployments_list = AppsV1.list_namespaced_deployment(args.namespace)
 
     # create dictionary with deployment name as a key and all envs as a value
     k8s_deployments_with_envs = return_deployments_with_all_envs(k8s_deployments_list)
@@ -295,7 +299,7 @@ if __name__ == '__main__':
         k8s_deployments_with_mounted_envs_from_secrets, duplicated_secrets)
 
     # save secrets values in dictionary
-    k8s_secrets_encrypted = return_k8s_secrets_with_values_as_dict(k8s_deployments_with_secrets_no_values)
+    k8s_secrets_encrypted = return_k8s_secrets_with_values_as_dict(k8s_deployments_with_secrets_no_values, args)
 
     # some secrets values are multiline - AWS Secret Manager can't handle it,
     # that's why keep multiline secrets saved in base64 format
@@ -306,4 +310,4 @@ if __name__ == '__main__':
                                                                                secrets)
 
     # create / update objects in AWS Secrets Manager
-    create_or_update_secret_in_secret_manager(complete_deployment_struc, args.create_secret)
+    create_or_update_secret_in_secret_manager(complete_deployment_struc, args)
